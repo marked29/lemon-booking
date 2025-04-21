@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const INITIAL_FORM_STATE = {
-  guests: 0,
+  guests: '',
   eventType: '',
   time: '',
 };
@@ -13,36 +13,55 @@ type ReplaceAll<T, NewType> = {
 type FormData = typeof INITIAL_FORM_STATE;
 type FormError = Partial<ReplaceAll<FormData, string>>;
 
+const validateForm = (data: FormData): FormError => {
+  const errors: FormError = {};
+  if (!data.guests || +data.guests < 1) {
+    errors.guests = 'Укажите количество гостей';
+  }
+  if (!data.eventType) {
+    errors.eventType = 'Выберите тип события';
+  }
+  if (!data.time) {
+    errors.time = 'Укажите время';
+  }
+  return errors;
+};
+
+const ErrorMessage = ({ id, message }: { id: string; message?: string }) => {
+  return message ? (
+    <p id={id} className="text-sm text-red-500 mt-1">
+      {message}
+    </p>
+  ) : null;
+};
+
 export default function ReservationForm() {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
-
   const [errors, setErrors] = useState({} as FormError);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => (prev[name as keyof FormData] === value ? prev : { ...prev, [name]: value }));
   };
 
   const validate = () => {
-    const newErrors: FormError = {};
-    if (!formData.guests || formData.guests < 1) {
-      newErrors.guests = 'Укажите количество гостей';
-    }
-    if (!formData.eventType) {
-      newErrors.eventType = 'Выберите тип события';
-    }
-    if (!formData.time) {
-      newErrors.time = 'Укажите время';
-    }
+    const newErrors = validateForm(formData);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validate()) return;
-    console.log('Забронировано:', formData);
-    alert('Бронирование отправлено 🎉');
+
+    setIsSubmitting(true);
+    try {
+      console.log('Забронировано:', formData);
+      alert('Бронирование отправлено 🎉');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -54,12 +73,13 @@ export default function ReservationForm() {
         <input
           type="number"
           name="guests"
-          value={formData.guests}
+          value={formData.guests || ''}
           onChange={handleChange}
           className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           min="1"
+          aria-describedby="guests-error"
         />
-        {errors.guests && <p className="text-sm text-red-500 mt-1">{errors.guests}</p>}
+        <ErrorMessage id="guests-error" message={errors.guests} />
       </div>
 
       <div>
@@ -69,13 +89,14 @@ export default function ReservationForm() {
           value={formData.eventType}
           onChange={handleChange}
           className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          aria-describedby="eventType-error"
         >
           <option value="">-- Выберите --</option>
           <option value="birthday">День рождения</option>
           <option value="party">Вечеринка</option>
           <option value="business">Деловая встреча</option>
         </select>
-        {errors.eventType && <p className="text-sm text-red-500 mt-1">{errors.eventType}</p>}
+        <ErrorMessage id="eventType-error" message={errors.eventType} />
       </div>
 
       <div>
@@ -86,12 +107,17 @@ export default function ReservationForm() {
           value={formData.time}
           onChange={handleChange}
           className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          aria-describedby="time-error"
         />
-        {errors.time && <p className="text-sm text-red-500 mt-1">{errors.time}</p>}
+        <ErrorMessage id="time-error" message={errors.time} />
       </div>
 
-      <button type="submit" className="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200">
-        Забронировать
+      <button
+        type="submit"
+        className="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Отправка...' : 'Забронировать'}
       </button>
     </form>
   );
