@@ -1,10 +1,11 @@
 import Header from 'src/components/header/Header';
+import Main from 'src/components/main/Main';
 
-export function Main() {
+export function Home() {
   return (
     <>
       <Header />
-      <main>Main</main>
+      <Main />
       <footer>Footer</footer>
     </>
   );
